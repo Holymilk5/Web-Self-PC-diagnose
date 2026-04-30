@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> PC 자가진단 툴</title>
+    <title>사내 PC 자가진단 툴</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;700&display=swap');
@@ -14,7 +14,11 @@
 
     <div class="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden">
         <!-- 헤더 -->
-        <div class="bg-blue-600 p-6 text-white text-center">
+        <div class="bg-blue-600 p-6 text-white text-center relative">
+            <!-- 뒤로가기 버튼 (상단 왼쪽) -->
+            <button id="back-btn" onclick="goBack()" class="absolute left-4 top-7 text-blue-200 hover:text-white hidden">
+                ← 뒤로
+            </button>
             <h1 class="text-xl font-bold">💻 PC 증상 자가진단</h1>
             <p class="text-blue-100 text-sm mt-1">질문을 따라 클릭해 주세요</p>
         </div>
@@ -27,29 +31,31 @@
                 </h2>
                 
                 <div id="options-space" class="space-y-3">
-                    <!-- 버튼들이 여기에 동적으로 생성됩니다 -->
+                    <!-- 버튼 동적 생성 -->
                 </div>
             </div>
 
-            <!-- 결과 화면 (처음엔 숨김) -->
-            <div id="result-container" class="hidden">
-                <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
-                    <p id="result-text" class="text-green-700 whitespace-pre-line"></p>
+            <!-- 결과 화면 -->
+            <div id="result-container" class="hidden text-center">
+                <div class="bg-blue-50 border-t-4 border-blue-500 p-6 rounded-xl mb-6">
+                    <p id="result-text" class="text-gray-800 text-lg leading-relaxed whitespace-pre-line"></p>
                 </div>
-                <button onclick="resetDiagnosis()" class="w-full bg-gray-200 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-300 transition">
-                    처음부터 다시 하기
+                <button onclick="resetDiagnosis()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg">
+                    메인 화면으로 돌아가기
                 </button>
             </div>
         </div>
         
-        <!-- 하단 안내 -->
         <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 text-center">
             <p class="text-xs text-gray-400">자가진단으로 해결 안 될 시 IT 관리자에게 문의하세요.</p>
         </div>
     </div>
 
     <script>
-        // 진단 데이터 (이 부분을 수정하여 질문을 확장할 수 있습니다)
+        // 방문 기록을 저장할 배열
+        let historyStack = [];
+        let currentStepId = 'start';
+
         const diagnosisData = {
             "start": {
                 title: "어디에 문제가 있나요?",
@@ -82,7 +88,6 @@
                     { text: "다시 꽂으니 돼요!", result: "접촉 불량이었네요. 다행입니다!" }
                 ]
             },
-            // ... 이런 식으로 5단계까지 계속 확장 가능합니다.
             "slow": {
                 title: "언제부터 느려졌나요?",
                 options: [
@@ -97,26 +102,41 @@
                     { text: "아니요, 없어요", result: "작업관리자(Ctrl+Shift+Esc)에서 CPU 점유율이 높은 앱을 종료하세요." }
                 ]
             }
+            // 25가지 케이스를 이 형식에 맞춰 계속 추가하시면 됩니다.
         };
 
-        function showStep(stepId) {
+        function showStep(stepId, isBack = false) {
             const step = diagnosisData[stepId];
-            const questionText = document.getElementById('question-text');
-            const optionsSpace = document.getElementById('options-space');
-            const resultContainer = document.getElementById('result-container');
-            const questionContainer = document.getElementById('question-container');
-
-            // 옵션 영역 초기화
-            optionsSpace.innerHTML = '';
-
             if (!step) return;
 
+            // 뒤로가기 버튼 노출 로직 (메인화면이 아니면 보여줌)
+            const backBtn = document.getElementById('back-btn');
+            if (stepId === 'start') {
+                backBtn.classList.add('hidden');
+                historyStack = []; // 메인이면 히스토리 초기화
+            } else {
+                backBtn.classList.remove('hidden');
+            }
+
+            // 현재 단계를 히스토리에 저장 (뒤로가기로 온 게 아닐 때만)
+            if (!isBack && stepId !== currentStepId) {
+                historyStack.push(currentStepId);
+            }
+            currentStepId = stepId;
+
+            // UI 업데이트
+            document.getElementById('question-container').classList.remove('hidden');
+            document.getElementById('result-container').classList.add('hidden');
+            
+            const questionText = document.getElementById('question-text');
+            const optionsSpace = document.getElementById('options-space');
+            optionsSpace.innerHTML = '';
             questionText.innerText = step.title;
 
             step.options.forEach(opt => {
                 const btn = document.createElement('button');
                 btn.innerText = opt.text;
-                btn.className = "w-full text-left p-4 border border-gray-200 rounded-xl hover:bg-blue-50 hover:border-blue-300 transition-all font-medium text-gray-700 shadow-sm";
+                btn.className = "w-full text-left p-4 border border-gray-200 rounded-xl hover:bg-blue-50 hover:border-blue-300 transition-all font-medium text-gray-700 shadow-sm active:scale-95";
                 
                 btn.onclick = () => {
                     if (opt.result) {
@@ -129,19 +149,25 @@
             });
         }
 
+        function goBack() {
+            if (historyStack.length > 0) {
+                const lastStep = historyStack.pop();
+                showStep(lastStep, true);
+            }
+        }
+
         function showResult(text) {
             document.getElementById('question-container').classList.add('hidden');
             document.getElementById('result-container').classList.remove('hidden');
             document.getElementById('result-text').innerText = text;
+            // 결과창에서는 상단 뒤로가기 버튼 유지 (수정하고 싶을 수 있으므로)
         }
 
         function resetDiagnosis() {
-            document.getElementById('question-container').classList.remove('hidden');
-            document.getElementById('result-container').classList.add('hidden');
             showStep('start');
         }
 
-        // 초기 시작
+        // 앱 실행
         showStep('start');
     </script>
 </body>
