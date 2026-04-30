@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>사내 PC 자가진단 툴</title>
+    <title>PC 자가진단 툴</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;700&display=swap');
@@ -15,12 +15,12 @@
     <div class="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden">
         <!-- 헤더 -->
         <div class="bg-blue-600 p-6 text-white text-center relative">
-            <!-- 뒤로가기 버튼 (상단 왼쪽) -->
-            <button id="back-btn" onclick="goBack()" class="absolute left-4 top-7 text-blue-200 hover:text-white hidden">
+            <!-- 뒤로가기 버튼 -->
+            <button id="back-btn" onclick="goBack()" class="absolute left-4 top-7 text-blue-200 hover:text-white hidden transition-colors">
                 ← 뒤로
             </button>
             <h1 class="text-xl font-bold">💻 PC 증상 자가진단</h1>
-            <p class="text-blue-100 text-sm mt-1">질문을 따라 클릭해 주세요</p>
+            <p class="text-blue-100 text-sm mt-1">증상에 맞는 항목을 선택해 주세요</p>
         </div>
 
         <!-- 메인 콘텐츠 -->
@@ -37,25 +37,26 @@
 
             <!-- 결과 화면 -->
             <div id="result-container" class="hidden text-center">
-                <div class="bg-blue-50 border-t-4 border-blue-500 p-6 rounded-xl mb-6">
-                    <p id="result-text" class="text-gray-800 text-lg leading-relaxed whitespace-pre-line"></p>
+                <div class="bg-blue-50 border-t-4 border-blue-500 p-6 rounded-xl mb-6 text-left">
+                    <p id="result-text" class="text-gray-800 text-lg leading-relaxed whitespace-pre-line font-medium"></p>
                 </div>
-                <button onclick="resetDiagnosis()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg">
-                    메인 화면으로 돌아가기
+                <button onclick="resetDiagnosis()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg active:scale-95">
+                    첫 화면으로 돌아가기
                 </button>
             </div>
         </div>
         
+        <!-- 하단 안내 -->
         <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 text-center">
-            <p class="text-xs text-gray-400">자가진단으로 해결 안 될 시 IT 관리자에게 문의하세요.</p>
+            <p class="text-xs text-gray-400 font-medium">자가진단으로 해결되지 않으면 담당자에게 문의하세요.</p>
         </div>
     </div>
 
     <script>
-        // 방문 기록을 저장할 배열
         let historyStack = [];
         let currentStepId = 'start';
 
+        // 이 데이터 부분을 수정하여 내용을 채우시면 됩니다.
         const diagnosisData = {
             "start": {
                 title: "어디에 문제가 있나요?",
@@ -71,60 +72,56 @@
                 title: "전원이 아예 안 들어오나요?",
                 options: [
                     { text: "네, 아무 반응 없어요", next: "power_dead" },
-                    { text: "불은 켜지는데 윈도우가 안떠요", next: "power_no_boot" }
+                    { text: "불은 켜지는데 화면이 안 나와요", next: "power_no_boot" }
                 ]
             },
             "power_dead": {
                 title: "멀티탭 스위치는 켜져 있나요?",
                 options: [
                     { text: "확인해보니 꺼져 있었어요", result: "멀티탭 스위치를 켜고 다시 확인해보세요." },
-                    { text: "켜져 있는데도 안 돼요", next: "power_cable" }
+                    { text: "켜져 있는데도 반응이 없어요", next: "power_cable" }
                 ]
             },
             "power_cable": {
                 title: "본체 뒤 전원 코드를 꽉 눌러보셨나요?",
                 options: [
-                    { text: "눌러봤는데 똑같아요", result: "파워 서플라이 불량일 가능성이 높습니다. 담당자를 호출하세요." },
-                    { text: "다시 꽂으니 돼요!", result: "접촉 불량이었네요. 다행입니다!" }
+                    { text: "눌러봤는데 똑같아요", result: "하드웨어 불량 가능성이 있습니다. 담당자를 호출하여 점검을 받으세요." },
+                    { text: "다시 꽂으니 해결됐어요!", result: "접촉 불량 문제였습니다. 다행입니다!" }
                 ]
             },
             "slow": {
                 title: "언제부터 느려졌나요?",
                 options: [
-                    { text: "오늘 갑자기요", next: "slow_today" },
-                    { text: "오래전부터 계속요", next: "slow_long" }
+                    { text: "최근에 갑자기 느려졌어요", next: "slow_today" },
+                    { text: "오래전부터 계속 느려요", next: "slow_long" }
                 ]
             },
             "slow_today": {
-                title: "최근에 설치한 프로그램이 있나요?",
+                title: "최근에 새로운 프로그램을 설치했나요?",
                 options: [
-                    { text: "네, 있어요", result: "설치한 프로그램을 제어판에서 삭제 후 재부팅해보세요." },
-                    { text: "아니요, 없어요", result: "작업관리자(Ctrl+Shift+Esc)에서 CPU 점유율이 높은 앱을 종료하세요." }
+                    { text: "네, 설치한 게 있어요", result: "최근 설치한 프로그램을 삭제한 후 재부팅하여 상태를 확인해 보세요." },
+                    { text: "아니요, 없습니다", result: "PC를 재부팅하고 불필요한 크롬 탭이나 창을 닫아 보세요." }
                 ]
             }
-            // 25가지 케이스를 이 형식에 맞춰 계속 추가하시면 됩니다.
         };
 
         function showStep(stepId, isBack = false) {
             const step = diagnosisData[stepId];
             if (!step) return;
 
-            // 뒤로가기 버튼 노출 로직 (메인화면이 아니면 보여줌)
             const backBtn = document.getElementById('back-btn');
             if (stepId === 'start') {
                 backBtn.classList.add('hidden');
-                historyStack = []; // 메인이면 히스토리 초기화
+                historyStack = [];
             } else {
                 backBtn.classList.remove('hidden');
             }
 
-            // 현재 단계를 히스토리에 저장 (뒤로가기로 온 게 아닐 때만)
             if (!isBack && stepId !== currentStepId) {
                 historyStack.push(currentStepId);
             }
             currentStepId = stepId;
 
-            // UI 업데이트
             document.getElementById('question-container').classList.remove('hidden');
             document.getElementById('result-container').classList.add('hidden');
             
@@ -136,7 +133,7 @@
             step.options.forEach(opt => {
                 const btn = document.createElement('button');
                 btn.innerText = opt.text;
-                btn.className = "w-full text-left p-4 border border-gray-200 rounded-xl hover:bg-blue-50 hover:border-blue-300 transition-all font-medium text-gray-700 shadow-sm active:scale-95";
+                btn.className = "w-full text-left p-4 border border-gray-200 rounded-xl hover:bg-blue-50 hover:border-blue-300 transition-all font-medium text-gray-700 shadow-sm active:scale-[0.98]";
                 
                 btn.onclick = () => {
                     if (opt.result) {
@@ -160,14 +157,12 @@
             document.getElementById('question-container').classList.add('hidden');
             document.getElementById('result-container').classList.remove('hidden');
             document.getElementById('result-text').innerText = text;
-            // 결과창에서는 상단 뒤로가기 버튼 유지 (수정하고 싶을 수 있으므로)
         }
 
         function resetDiagnosis() {
             showStep('start');
         }
 
-        // 앱 실행
         showStep('start');
     </script>
 </body>
